@@ -1,0 +1,61 @@
+﻿@{
+    ViewBag.Title = "Home Page";
+}
+
+<div class="container">
+    <div class="jumbotron">
+        <form class="form-horizontal">
+            <div class="form-group">
+                <label for="controlFile">Select CSV</label>
+                <input type="file" class="form-control-file" onchange="handleFile()" id="controlFile">
+            </div>
+        </form>
+    </div> 
+    <div>
+        <table id="table" class="table table-striped table-bordered"> 
+        </table>
+    </div>
+</div>
+    <script>
+        function handleFile() {
+            $("#table").html("");
+            var csv = $('#controlFile');
+            var csvFile = csv[0].files[0];
+            var uploadedFile = new FormData();
+            uploadedFile.append("CSVFile", csvFile);
+            $.ajax({
+                url: '/Api/FilesToJason/CsvToJason',
+                data: uploadedFile,
+                type: 'POST',
+                contentType: false,
+                processData: false,
+                success: function (response) {
+                    var data = JSON.parse(response); 
+                    var $columns = null,
+                        $head = $('<thead>'),
+                        $body = $('<tbody>');
+                    $.each(data, function (index, obj) {
+                        if ($columns === null) {
+                            // generate the first row 
+                            $columns = $('<tr>').append($.map(obj, function (value, name) {
+                                return $('<th>', { text: name });
+                            })).appendTo($head);
+                        }
+                        // generate each row
+                        $('<tr>').append($.map(obj, function (value, name) {
+                            return $('<td>', { text: value });
+                        })).appendTo($body);
+                    });
+                    // append all the things
+                    $("#table").append($head).append($body);
+                    var priceIndex = $("#table th:contains('Price')").index();
+                    setCurrency(priceIndex);
+                },
+                error: function (response) { 
+                    var title = 'Error';
+                    var content = response.responseText;
+                    showMessageModal(title, content);
+                },
+            });
+        }  
+    </script>
